@@ -1,0 +1,20 @@
+# Camera Configuration
+# Resolution settings optimized for Raspberry Pi 5
+resolution:
+  width: 640
+  height: 480
+
+# Target framerate
+fps: 30
+
+# Camera device ID (usually 0 for /dev/video0)
+device_id: 0
+
+# Optional: Camera intrinsic parameters (update after calibration)
+calibration:
+  camera_matrix:
+    - [800.0, 0.0, 320.0]
+    - [0.0, 800.0, 240.0]
+    - [0.0, 0.0, 1.0]
+  dist_coeffs:
+    - [0.0, 0.0, 0.0, 0.0, 0.0]

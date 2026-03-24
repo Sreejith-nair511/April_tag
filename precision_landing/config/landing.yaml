@@ -1,0 +1,22 @@
+# Landing control parameters
+
+# Thresholds for ALIGN state (in meters)
+alignment:
+  x_threshold: 0.1
+  y_threshold: 0.1
+
+# Descent speed and filtering params
+descent:
+  max_descend_rate: 0.5  # m/s
+  min_altitude: 0.2      # meters (when to switch to land or stop tracker)
+
+# Marker settings
+marker:
+  type: "aruco"          # 'aruco' or 'apriltag'
+  dictionary: "DICT_4X4_50"
+  real_size: 0.15        # Marker size in meters
+
+# Serial connection for MAVLink
+mavlink:
+  device: "/dev/ttyACM0"
+  baudrate: 115200

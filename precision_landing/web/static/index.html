@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Precision Landing – Monitor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #111827;
+            --bg-card: #1a1f35;
+            --bg-card-hover: #222845;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-amber: #f59e0b;
+            --accent-purple: #8b5cf6;
+            --accent-cyan: #06b6d4;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border: #1e293b;
+            --glow-blue: 0 0 20px rgba(59,130,246,0.3);
+            --glow-green: 0 0 20px rgba(16,185,129,0.3);
+            --glow-red: 0 0 20px rgba(239,68,68,0.3);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* === HEADER === */
+        .header {
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-card) 100%);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(12px);
+        }
+        .header-left { display: flex; align-items: center; gap: 16px; }
+        .logo {
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 18px;
+            box-shadow: var(--glow-blue);
+        }
+        .header-title { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
+        .header-subtitle { font-size: 12px; color: var(--text-muted); }
+        .connection-badge {
+            display: flex; align-items: center; gap: 8px;
+            padding: 6px 14px; border-radius: 20px;
+            font-size: 12px; font-weight: 500;
+            border: 1px solid var(--border);
+            background: var(--bg-secondary);
+            transition: all 0.3s ease;
+        }
+        .connection-badge.online { border-color: var(--accent-green); color: var(--accent-green); }
+        .connection-badge.offline { border-color: var(--accent-red); color: var(--accent-red); }
+        .pulse-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        .pulse-dot.green { background: var(--accent-green); }
+        .pulse-dot.red { background: var(--accent-red); }
+
+        @keyframes pulse {
+            0%,100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+
+        /* === GRID LAYOUT === */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: auto auto auto;
+            gap: 20px;
+            padding: 24px 32px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* === CARDS === */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-blue), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .card:hover { background: var(--bg-card-hover); }
+        .card:hover::before { opacity: 1; }
+        .card-title {
+            font-size: 11px; font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .card-title .icon { font-size: 14px; }
+
+        /* === STATE CARD === */
+        .state-card { grid-column: 1 / 4; }
+        .state-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 40px;
+            padding: 20px 0;
+        }
+        .state-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            opacity: 0.3;
+            transition: all 0.4s ease;
+        }
+        .state-step.active { opacity: 1; }
+        .state-circle {
+            width: 64px; height: 64px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px;
+            border: 2px solid var(--border);
+            transition: all 0.4s ease;
+            background: var(--bg-secondary);
+        }
+        .state-step.active .state-circle {
+            border-color: var(--accent-blue);
+            box-shadow: var(--glow-blue);
+            background: rgba(59,130,246,0.1);
+        }
+        .state-step.active.search .state-circle {
+            border-color: var(--accent-amber);
+            box-shadow: 0 0 20px rgba(245,158,11,0.3);
+            background: rgba(245,158,11,0.1);
+        }
+        .state-step.active.align .state-circle {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 20px rgba(6,182,212,0.3);
+            background: rgba(6,182,212,0.1);
+        }
+        .state-step.active.descend .state-circle {
+            border-color: var(--accent-green);
+            box-shadow: var(--glow-green);
+            background: rgba(16,185,129,0.1);
+        }
+        .state-label {
+            font-size: 12px; font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+        .state-connector {
+            width: 60px; height: 2px;
+            background: var(--border);
+            position: relative;
+        }
+        .state-connector.active { background: var(--accent-blue); }
+
+        /* === METRIC CARDS === */
+        .metric-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 36px; font-weight: 700;
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+        .metric-unit { font-size: 13px; color: var(--text-muted); }
+
+        /* === CROSSHAIR (XY Tracker) === */
+        .crosshair-card { grid-row: span 2; }
+        .crosshair-container {
+            width: 100%; aspect-ratio: 1;
+            background: var(--bg-primary);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+        .crosshair-grid {
+            position: absolute; inset: 0;
+            background:
+                linear-gradient(var(--border) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border) 1px, transparent 1px);
+            background-size: 25% 25%;
+            opacity: 0.4;
+        }
+        .crosshair-axis-x, .crosshair-axis-y {
+            position: absolute;
+            background: rgba(148,163,184,0.2);
+        }
+        .crosshair-axis-x { width: 100%; height: 1px; top: 50%; }
+        .crosshair-axis-y { height: 100%; width: 1px; left: 50%; }
+        .crosshair-zone {
+            position: absolute;
+            width: 20%; height: 20%;
+            top: 40%; left: 40%;
+            border: 1px dashed var(--accent-green);
+            border-radius: 50%;
+            opacity: 0.5;
+        }
+        .marker-dot {
+            position: absolute;
+            width: 14px; height: 14px;
+            border-radius: 50%;
+            background: var(--accent-red);
+            box-shadow: var(--glow-red);
+            transform: translate(-50%, -50%);
+            transition: all 0.15s ease-out;
+            z-index: 10;
+        }
+        .marker-dot.aligned {
+            background: var(--accent-green);
+            box-shadow: var(--glow-green);
+        }
+        .trail-dot {
+            position: absolute;
+            width: 4px; height: 4px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            opacity: 0.4;
+            transform: translate(-50%, -50%);
+        }
+
+        /* === STATUS INDICATORS === */
+        .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .status-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px 16px;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+        .status-led {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .status-led.ok { background: var(--accent-green); box-shadow: 0 0 8px rgba(16,185,129,0.5); }
+        .status-led.err { background: var(--accent-red); box-shadow: 0 0 8px rgba(239,68,68,0.5); }
+        .status-name { font-size: 13px; font-weight: 500; }
+        .status-val { font-size: 11px; color: var(--text-muted); margin-left: auto; font-family: 'JetBrains Mono', monospace; }
+
+        /* === LOG CONSOLE === */
+        .log-card { grid-column: 1 / 4; }
+        .log-console {
+            background: #050810;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            padding: 16px;
+            height: 180px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        .log-console::-webkit-scrollbar { width: 6px; }
+        .log-console::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        .log-line { color: var(--text-secondary); }
+        .log-line .ts { color: var(--text-muted); }
+        .log-line.info .msg { color: var(--accent-blue); }
+        .log-line.warn .msg { color: var(--accent-amber); }
+        .log-line.error .msg { color: var(--accent-red); }
+        .log-line.ok .msg { color: var(--accent-green); }
+
+        /* === ALTITUDE BAR === */
+        .alt-bar-outer {
+            width: 100%; height: 16px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 12px;
+            border: 1px solid var(--border);
+        }
+        .alt-bar-inner {
+            height: 100%;
+            border-radius: 8px;
+            background: linear-gradient(90deg, var(--accent-green), var(--accent-cyan), var(--accent-blue));
+            transition: width 0.3s ease;
+        }
+
+        /* === ANIMATIONS === */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .card { animation: fadeInUp 0.4s ease backwards; }
+        .card:nth-child(1) { animation-delay: 0.05s; }
+        .card:nth-child(2) { animation-delay: 0.1s; }
+        .card:nth-child(3) { animation-delay: 0.15s; }
+        .card:nth-child(4) { animation-delay: 0.2s; }
+        .card:nth-child(5) { animation-delay: 0.25s; }
+        .card:nth-child(6) { animation-delay: 0.3s; }
+        .card:nth-child(7) { animation-delay: 0.35s; }
+
+        /* === RESPONSIVE === */
+        @media (max-width: 1024px) {
+            .dashboard { grid-template-columns: 1fr 1fr; }
+            .state-card, .log-card { grid-column: 1 / 3; }
+            .crosshair-card { grid-row: span 1; }
+        }
+        @media (max-width: 600px) {
+            .dashboard { grid-template-columns: 1fr; padding: 12px; }
+            .state-card, .log-card { grid-column: 1; }
+            .state-display { flex-wrap: wrap; gap: 16px; }
+            .state-connector { display: none; }
+            .header { padding: 12px 16px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER -->
+    <header class="header">
+        <div class="header-left">
+            <div class="logo">▼</div>
+            <div>
+                <div class="header-title">Precision Landing</div>
+                <div class="header-subtitle">RPi5 Drone Monitor v1.0</div>
+            </div>
+        </div>
+        <div class="connection-badge offline" id="conn-badge">
+            <span class="pulse-dot red" id="pulse-dot"></span>
+            <span id="conn-text">Disconnected</span>
+        </div>
+    </header>
+
+    <!-- DASHBOARD -->
+    <main class="dashboard">
+
+        <!-- STATE PIPELINE -->
+        <div class="card state-card">
+            <div class="card-title"><span class="icon">⚡</span> Landing Pipeline State</div>
+            <div class="state-display" id="state-display">
+                <div class="state-step search" id="step-search">
+                    <div class="state-circle">🔍</div>
+                    <div class="state-label">Search</div>
+                </div>
+                <div class="state-connector" id="conn-1"></div>
+                <div class="state-step align" id="step-align">
+                    <div class="state-circle">🎯</div>
+                    <div class="state-label">Align</div>
+                </div>
+                <div class="state-connector" id="conn-2"></div>
+                <div class="state-step descend" id="step-descend">
+                    <div class="state-circle">⬇️</div>
+                    <div class="state-label">Descend</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FPS -->
+        <div class="card">
+            <div class="card-title"><span class="icon">📊</span> Processing Rate</div>
+            <div class="metric-value" id="fps-value">0.0</div>
+            <div class="metric-unit">frames per second</div>
+        </div>
+
+        <!-- ALTITUDE -->
+        <div class="card">
+            <div class="card-title"><span class="icon">📐</span> Altitude (Z)</div>
+            <div class="metric-value" id="alt-value">—</div>
+            <div class="metric-unit">meters</div>
+            <div class="alt-bar-outer">
+                <div class="alt-bar-inner" id="alt-bar" style="width:0%"></div>
+            </div>
+        </div>
+
+        <!-- XY CROSSHAIR -->
+        <div class="card crosshair-card">
+            <div class="card-title"><span class="icon">◎</span> Marker Position (X / Y)</div>
+            <div class="crosshair-container" id="crosshair">
+                <div class="crosshair-grid"></div>
+                <div class="crosshair-axis-x"></div>
+                <div class="crosshair-axis-y"></div>
+                <div class="crosshair-zone"></div>
+                <div class="marker-dot" id="marker-dot" style="left:50%;top:50%"></div>
+            </div>
+        </div>
+
+        <!-- X/Y NUMERIC -->
+        <div class="card">
+            <div class="card-title"><span class="icon">↔</span> Offset X</div>
+            <div class="metric-value" id="x-value">0.00</div>
+            <div class="metric-unit">meters</div>
+        </div>
+
+        <div class="card">
+            <div class="card-title"><span class="icon">↕</span> Offset Y</div>
+            <div class="metric-value" id="y-value">0.00</div>
+            <div class="metric-unit">meters</div>
+        </div>
+
+        <!-- SYSTEM STATUS -->
+        <div class="card" style="grid-column: span 2;">
+            <div class="card-title"><span class="icon">🖥️</span> System Health</div>
+            <div class="status-grid">
+                <div class="status-item">
+                    <div class="status-led err" id="led-cam"></div>
+                    <span class="status-name">Camera</span>
+                    <span class="status-val" id="val-cam">—</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-led err" id="led-mav"></div>
+                    <span class="status-name">MAVLink</span>
+                    <span class="status-val" id="val-mav">—</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-led err" id="led-trk"></div>
+                    <span class="status-name">Tracking</span>
+                    <span class="status-val" id="val-trk">—</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-led err" id="led-uptime"></div>
+                    <span class="status-name">Uptime</span>
+                    <span class="status-val" id="val-uptime">—</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- LOG CONSOLE -->
+        <div class="card log-card">
+            <div class="card-title"><span class="icon">📝</span> Event Log</div>
+            <div class="log-console" id="log-console">
+                <div class="log-line info"><span class="ts">[--:--:--]</span> <span class="msg">Waiting for connection to pipeline...</span></div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+    (function() {
+        'use strict';
+
+        const POLL_MS = 500;
+        const MAX_LOGS = 80;
+        let startTime = Date.now();
+        let lastState = '';
+        let trailDots = [];
+
+        // --- DOM refs ---
+        const $ = id => document.getElementById(id);
+        const fpsVal  = $('fps-value');
+        const altVal  = $('alt-value');
+        const altBar  = $('alt-bar');
+        const xVal    = $('x-value');
+        const yVal    = $('y-value');
+        const dot     = $('marker-dot');
+        const cross   = $('crosshair');
+        const logBox  = $('log-console');
+        const badge   = $('conn-badge');
+        const badgeTxt= $('conn-text');
+        const pulseDot= $('pulse-dot');
+
+        function setLed(id, ok) {
+            const el = $(id);
+            el.classList.toggle('ok', ok);
+            el.classList.toggle('err', !ok);
+        }
+
+        function addLog(msg, level = 'info') {
+            const d = new Date();
+            const ts = d.toTimeString().slice(0,8);
+            const line = document.createElement('div');
+            line.className = 'log-line ' + level;
+            line.innerHTML = `<span class="ts">[${ts}]</span> <span class="msg">${msg}</span>`;
+            logBox.appendChild(line);
+            if (logBox.children.length > MAX_LOGS) logBox.removeChild(logBox.firstChild);
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        function setActiveState(state) {
+            ['search','align','descend'].forEach(s => {
+                const el = $('step-' + s);
+                el.classList.toggle('active', s === state.toLowerCase());
+            });
+            $('conn-1').classList.toggle('active', state === 'ALIGN' || state === 'DESCEND');
+            $('conn-2').classList.toggle('active', state === 'DESCEND');
+        }
+
+        function mapToPercent(val, range) {
+            // map value from -range..+range to 0%..100%
+            return Math.max(0, Math.min(100, 50 + (val / range) * 50));
+        }
+
+        function addTrail(xPct, yPct) {
+            const d = document.createElement('div');
+            d.className = 'trail-dot';
+            d.style.left = xPct + '%';
+            d.style.top = yPct + '%';
+            cross.appendChild(d);
+            trailDots.push(d);
+            if (trailDots.length > 30) {
+                const old = trailDots.shift();
+                old.remove();
+            }
+        }
+
+        function updateDashboard(data) {
+            // Connection
+            const alive = data.timestamp && (Date.now()/1000 - data.timestamp) < 5;
+            badge.className = 'connection-badge ' + (alive ? 'online' : 'offline');
+            pulseDot.className = 'pulse-dot ' + (alive ? 'green' : 'red');
+            badgeTxt.textContent = alive ? 'Connected' : 'Disconnected';
+
+            // FPS
+            fpsVal.textContent = (data.fps || 0).toFixed(1);
+
+            // Altitude
+            const z = data.marker_z || 0;
+            altVal.textContent = z ? z.toFixed(2) : '—';
+            const altPct = Math.max(0, Math.min(100, (z / 5) * 100)); // 5m max
+            altBar.style.width = altPct + '%';
+
+            // Offsets
+            const x = data.marker_x || 0;
+            const y = data.marker_y || 0;
+            xVal.textContent = x.toFixed(3);
+            yVal.textContent = y.toFixed(3);
+
+            // Crosshair dot
+            const range = 1.0; // +/-1m
+            const xPct = mapToPercent(x, range);
+            const yPct = mapToPercent(y, range);
+            dot.style.left = xPct + '%';
+            dot.style.top  = yPct + '%';
+            const aligned = Math.abs(x) < 0.1 && Math.abs(y) < 0.1;
+            dot.classList.toggle('aligned', aligned);
+
+            if (data.tracking_active) addTrail(xPct, yPct);
+
+            // State
+            const state = data.landing_state || 'IDLE';
+            setActiveState(state);
+            if (state !== lastState) {
+                addLog(`State → ${state}`, state === 'DESCEND' ? 'ok' : 'info');
+                lastState = state;
+            }
+
+            // LEDs
+            setLed('led-cam', !!data.camera_ok);
+            $('val-cam').textContent = data.camera_ok ? 'Active' : 'Offline';
+            setLed('led-mav', !!data.mavlink_ok);
+            $('val-mav').textContent = data.mavlink_ok ? 'Active' : 'Offline';
+            setLed('led-trk', !!data.tracking_active);
+            $('val-trk').textContent = data.tracking_active ? 'Locked' : 'No target';
+            setLed('led-uptime', alive);
+            const up = Math.floor((Date.now() - startTime) / 1000);
+            const m = Math.floor(up / 60), s = up % 60;
+            $('val-uptime').textContent = `${m}m ${s}s`;
+        }
+
+        // --- DEMO MODE: runs when the real API is unreachable ---
+        let demoTimer = null;
+        let demoPhase = 0;
+        function demoTick() {
+            demoPhase += 0.05;
+            const state = demoPhase < 3 ? 'SEARCH' :
+                          demoPhase < 8 ? 'ALIGN' : 'DESCEND';
+            const tracking = demoPhase >= 3;
+            const x = tracking ? Math.sin(demoPhase * 1.3) * (0.5 / (1 + demoPhase * 0.1)) : 0;
+            const y = tracking ? Math.cos(demoPhase * 0.9) * (0.4 / (1 + demoPhase * 0.1)) : 0;
+            const z = tracking ? Math.max(0.2, 3 - demoPhase * 0.15) : 0;
+            updateDashboard({
+                timestamp: Date.now() / 1000,
+                fps: 24 + Math.random() * 6,
+                landing_state: state,
+                camera_ok: true,
+                mavlink_ok: demoPhase > 1,
+                tracking_active: tracking,
+                marker_x: x, marker_y: y, marker_z: z
+            });
+        }
+
+        function startDemo() {
+            addLog('🟡 No live pipeline detected — running in DEMO mode', 'warn');
+            demoTimer = setInterval(demoTick, POLL_MS);
+        }
+
+        // --- LIVE POLLING ---
+        let failCount = 0;
+
+        async function poll() {
+            try {
+                const res = await fetch('/api/status');
+                if (!res.ok) throw new Error(res.status);
+                const data = await res.json();
+                failCount = 0;
+                if (demoTimer) { clearInterval(demoTimer); demoTimer = null; }
+                updateDashboard(data);
+            } catch(e) {
+                failCount++;
+                if (failCount === 3 && !demoTimer) startDemo();
+            }
+        }
+
+        setInterval(poll, POLL_MS);
+        poll();
+    })();
+    </script>
+</body>
+</html>
